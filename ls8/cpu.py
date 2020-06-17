@@ -7,29 +7,29 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
-
-    def load(self):
+        self.ram = [0]*255
+        self.pc = 0
+        self.register = [0]*8
+        self.table = {1:self.hlt, 2:self.ldi, 7:self.prn}
+    def load(self, file):
         """Load a program into memory."""
-
         address = 0
+        with open(f'examples/{file}.ls8') as f:
+            for line in f:
+                instruction = line.split('#')[0]
+                try:
+                    int(instruction)
+                except:
+                    continue
+                self.ram[address] = instruction
+                address += 1
 
-        # For now, we've just hardcoded a program:
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
+    def ram_read(self, pc):
+        return self.ram[pc]
+    
+    def ram_write(self, pc, val):
+        self.ram[pc] = val
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -62,4 +62,25 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        while True:
+            x = None
+            y = None
+            ir = self.ram[self.pc]
+            op = int(ir[-4:],2)
+            args = int(ir[:2],2)
+            if args > 0:
+                x = int(self.ram[self.pc+1], 2)
+                if args > 1:
+                    y = int(self.ram[self.pc+2], 2)
+            
+            self.table[op](x,y)
+
+
+    def ldi(self, r, i):
+        self.register[r] = i
+        self.pc += 3
+    def prn(self, r, y):
+        print(f'Value at register {r}: {self.register[r]}')
+        self.pc += 2
+    def hlt(self, x, y):
+        sys.exit()
