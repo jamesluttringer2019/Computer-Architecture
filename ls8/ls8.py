@@ -7,5 +7,5 @@ from cpu import *
 
 cpu = CPU()
 
-cpu.load('print8')
+cpu.load('mult')
 cpu.run()

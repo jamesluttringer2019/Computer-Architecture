@@ -7,10 +7,12 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.ram = [0]*255
+        self.ram = [0]*256
         self.pc = 0
         self.register = [0]*8
-        self.table = {1:self.hlt, 2:self.ldi, 7:self.prn}
+        self.register[7] = 0xf4
+        self.sp = self.register[7]
+        self.table = {1:self.hlt, 2:self.ldi, 7:self.prn, 5:self.push, 6:self.pop}
     def load(self, file):
         """Load a program into memory."""
         address = 0
@@ -31,15 +33,14 @@ class CPU:
     def ram_write(self, pc, val):
         self.ram[pc] = val
 
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op, r1, r2):
         """ALU operations."""
 
-        if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        if op == 2:
+            self.register[r1] = self.register[r1]*self.register[r2]
         else:
             raise Exception("Unsupported ALU operation")
-
+        self.pc += 3
     def trace(self):
         """
         Handy function to print out the CPU state. You might want to call this
@@ -56,7 +57,7 @@ class CPU:
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %02X" % self.register[i], end='')
 
         print()
 
@@ -68,12 +69,16 @@ class CPU:
             ir = self.ram[self.pc]
             op = int(ir[-4:],2)
             args = int(ir[:2],2)
+            al = int(ir[2])
             if args > 0:
                 x = int(self.ram[self.pc+1], 2)
                 if args > 1:
                     y = int(self.ram[self.pc+2], 2)
-            
-            self.table[op](x,y)
+            if al == 1:
+                print(x,y)
+                self.alu(op, x, y)
+            else:
+                self.table[op](x,y)
 
 
     def ldi(self, r, i):
@@ -84,3 +89,13 @@ class CPU:
         self.pc += 2
     def hlt(self, x, y):
         sys.exit()
+    def push(self, r, y):
+        self.sp -= 1
+        val = self.register[r]
+        self.ram[self.sp] = val
+        self.pc += 2
+    def pop(self, r, y):
+        val = self.ram[self.sp]
+        self.register[r] = val
+        self.sp += 1
+        self.pc += 2
