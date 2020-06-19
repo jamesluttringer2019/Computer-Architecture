@@ -9,10 +9,11 @@ class CPU:
         """Construct a new CPU."""
         self.ram = [0]*256
         self.pc = 0
+        self.fl = 0
         self.register = [0]*8
         self.register[7] = 0xf4
         self.sp = self.register[7]
-        self.table = {1:self.hlt, 2:self.ldi, 7:self.prn, 5:self.push, 6:self.pop}
+        self.table = {1:self.hlt, 2:self.ldi, 7:self.prn, 4:self.jmp, 6:self.jne, 5:self.jeq}
     def load(self, file):
         """Load a program into memory."""
         address = 0
@@ -35,9 +36,17 @@ class CPU:
 
     def alu(self, op, r1, r2):
         """ALU operations."""
-
-        if op == 2:
-            self.register[r1] = self.register[r1]*self.register[r2]
+        v1 = self.register[r1]
+        v2 = self.register[r2]
+        if op == 2: #MULT
+            self.register[r1] = v1*v2
+        elif op == 7: #CMP 
+            if v1 == v2:
+                self.fl = 1
+            elif v1 > v2:
+                self.fl = 2
+            elif v2 > v1:
+                self.fl = 4
         else:
             raise Exception("Unsupported ALU operation")
         self.pc += 3
@@ -75,7 +84,6 @@ class CPU:
                 if args > 1:
                     y = int(self.ram[self.pc+2], 2)
             if al == 1:
-                print(x,y)
                 self.alu(op, x, y)
             else:
                 self.table[op](x,y)
@@ -99,3 +107,16 @@ class CPU:
         self.register[r] = val
         self.sp += 1
         self.pc += 2
+    def jmp(self, r, y):
+        address = self.register[r]
+        self.pc = address
+    def jeq(self, r, y):
+        if self.fl == 1:
+            self.jmp(r, y)
+        else:
+            self.pc += 2
+    def jne(self, r, y):
+        if self.fl != 1:
+            self.jmp(r,y)
+        else:
+            self.pc += 2

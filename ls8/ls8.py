@@ -7,5 +7,5 @@ from cpu import *
 
 cpu = CPU()
 
-cpu.load('mult')
+cpu.load('sctest')
 cpu.run()
